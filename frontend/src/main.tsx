@@ -313,36 +313,39 @@ function App() {
     setPage('dashboard')
   }
 
+  function beginNewAnalysis() {
+    setJob(null)
+    setVideo(null)
+    setEvents([])
+    setArtifacts([])
+    setError('')
+    localStorage.removeItem('scenetrace:lastJobId')
+    setPage('dashboard')
+  }
+
   const completedVideos = videos.filter((item) => item.latest_job_id)
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <button className="brand" onClick={resetWorkspace} aria-label="Go to SceneTrace dashboard">
-          <span className="brand-mark"><span /></span>
-          <span>Scene<span className="brand-light">Trace</span><small>VIDEO INTELLIGENCE</small></span>
+          <span>SceneTrace</span>
         </button>
-        <div className="side-label">WORKSPACE</div>
+        <div className="side-label">Workspace</div>
         <button className={`nav-item ${page === 'dashboard' || page === 'upload' ? 'active' : ''}`} onClick={resetWorkspace}>
-          <span className="nav-glyph">⌂</span> Overview
+          Overview
         </button>
         <button className={`nav-item ${page === 'results' || page === 'processing' ? 'active' : ''}`} onClick={() => job && openJob(job.job_id)} disabled={!job}>
-          <span className="nav-glyph">◷</span> Current analysis
+          Current analysis
           {job && <span className={`nav-dot ${job.status}`} />}
         </button>
         <div className="sidebar-spacer" />
-        <div className="local-card">
-          <span className="local-icon">⌘</span>
-          <div><strong>Private by design</strong><p>Files stay on this device.</p></div>
-          <span className="online-dot" />
-        </div>
-        <div className="sidebar-foot">SCENETRACE · LOCAL MVP</div>
+        <div className="sidebar-foot">Files are stored locally</div>
       </aside>
 
       <main className="main-area">
         <header className="topbar">
           <div className="crumb"><span>Workspace</span><b>/</b><strong>{page === 'results' ? 'Analysis results' : page === 'processing' ? 'Processing' : page === 'upload' ? 'New analysis' : 'Overview'}</strong></div>
-          <div className="topbar-right"><span className="local-pill"><i /> LOCAL PROCESSING</span><div className="avatar">ST</div></div>
         </header>
 
         {error && <div className="toast error-toast" role="alert"><span>!</span>{error}<button onClick={() => setError('')}>×</button></div>}
@@ -350,100 +353,97 @@ function App() {
         {page === 'dashboard' && (
           <section className="page-content dashboard-page">
             <div className="welcome-row">
-              <div><div className="eyebrow">YOUR LOCAL VIDEO WORKSPACE</div><h1>See what happens<br /><em>in every frame.</em></h1><p className="lede">Turn recorded video into a searchable timeline of detected objects.</p></div>
-              <div className="system-card">
-                <div className="system-card-head"><span className="pulse-dot" /> SYSTEM READY <span className="more">···</span></div>
-                <div className="system-device-icon">◉</div>
-                <div className="device-label">INFERENCE DEVICE</div>
-                <strong>{system?.device_name ?? (system?.cuda_available ? 'NVIDIA GPU' : system ? 'CPU fallback' : 'Checking device…')}</strong>
-                <div className="system-meta"><span>{system?.inference_device ?? '—'}</span><span className="meta-sep" />{system?.model_name ?? 'yolo11n.pt'}</div>
-                {system?.warning && <p className="system-warning">{system.warning}</p>}
-              </div>
+              <div className="welcome-copy"><h1>Find objects in your videos.</h1><p className="lede">Upload a clip to view detected objects and jump to their timestamps.</p></div>
             </div>
 
-            <div className="section-title-row"><div><div className="eyebrow">GET STARTED</div><h2>Start a new analysis</h2></div><span className="local-only-note"><span className="lock">▣</span> Processed locally</span></div>
+            <div className="system-status" aria-live="polite">
+              <span className={`system-status-dot ${system?.cuda_available ? 'available' : system ? 'fallback' : ''}`} />
+              <strong>{system?.cuda_available ? 'GPU available' : system ? 'CPU mode' : 'Checking device'}</strong>
+              {system?.device_name && <span>{system.device_name}</span>}
+              <span className="status-separator">·</span>
+              <span>{system?.model_name ?? 'yolo11n.pt'}</span>
+              {system?.warning && <span className="system-warning">{system.warning}</span>}
+            </div>
+
+            <div className="section-title-row"><div><h2>Analyze a video</h2><p>MP4, MOV, or AVI · up to 200 MB</p></div></div>
             <button className="upload-launch" onClick={() => inputRef.current?.click()}>
-              <span className="upload-orb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14" /></svg></span>
-              <span className="upload-copy"><strong>Choose a video to analyze</strong><small>MP4, MOV, or AVI · up to 200 MB</small></span>
-              <span className="browse-button">Browse files <b>↗</b></span>
+              <span className="upload-copy"><strong>Choose a video</strong><small>Files stay on this device.</small></span>
+              <span className="browse-button">Browse files</span>
             </button>
             <input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,.mp4,.mov,.avi" hidden onChange={onFileChange} />
 
-            <div className="section-title-row recent-heading"><div><div className="eyebrow">LIBRARY</div><h2>Recent videos</h2></div><button className="text-button" onClick={() => void refreshVideos()}>Refresh <span>↻</span></button></div>
+            <div className="section-title-row recent-heading"><div><h2>Recent videos</h2></div><button className="text-button" onClick={() => void refreshVideos()}>Refresh</button></div>
             <div className="recent-list">
               {loadingRecent && <div className="empty-row">Loading local library…</div>}
-              {!loadingRecent && completedVideos.length === 0 && <div className="empty-row"><span className="empty-symbol">◷</span><strong>No analyses yet</strong><p>Your recent videos and jobs will appear here.</p></div>}
+              {!loadingRecent && completedVideos.length === 0 && <div className="empty-row"><strong>No analyses yet</strong><p>Your recent videos and jobs will appear here.</p></div>}
               {completedVideos.slice(0, 6).map((item) => (
                 <button className="video-row" key={item.id} onClick={() => item.latest_job_id && void openJob(item.latest_job_id)}>
-                  <span className="file-icon">▶</span>
+                  <span className="file-icon">Video</span>
                   <span className="video-row-main"><strong>{item.original_filename}</strong><small>{formatTime(item.duration_seconds)} · {formatSize(item.file_size_bytes)} · {item.width} × {item.height}</small></span>
                   <span className={`status-chip ${item.latest_status ?? 'idle'}`}><i />{item.latest_status ?? 'uploaded'}</span>
-                  <span className="row-arrow">↗</span>
                 </button>
               ))}
             </div>
-            <div className="footnote"><span>ⓘ</span> Detection results are model scores. Sampling can miss brief events; track IDs may change between frames.</div>
+            <div className="footnote">Sampling can miss brief appearances. Track IDs may change between frames.</div>
           </section>
         )}
 
         {page === 'upload' && (
           <section className="page-content upload-page">
             <button className="back-link" onClick={() => { setPage('dashboard'); setError('') }}>← <span>Back to overview</span></button>
-            <div className="eyebrow">CONFIGURE YOUR RUN</div><h1 className="page-heading">New video analysis</h1><p className="page-subtitle">Choose how SceneTrace samples and labels your footage.</p>
+            <h1 className="page-heading">New video analysis</h1><p className="page-subtitle">Choose how frames are sampled and detected.</p>
             <div className="upload-layout">
               <div className="upload-main-card">
                 <div className="card-heading"><div><h2>Source video</h2><p>Your source remains in local storage.</p></div><button className="change-file" onClick={() => inputRef.current?.click()}>Change file</button></div>
                 <input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,.mp4,.mov,.avi" hidden onChange={onFileChange} />
                 {selectedFile && <>
                   <div className="local-preview">{objectUrl && <video src={objectUrl} controls muted playsInline />}</div>
-                  <div className="selected-file"><span className="file-icon">▶</span><div><strong>{selectedFile.name}</strong><small>{formatSize(selectedFile.size)} · Ready to analyze</small></div><span className="ready-check">✓</span></div>
+                  <div className="selected-file"><span className="file-icon">Video</span><div><strong>{selectedFile.name}</strong><small>{formatSize(selectedFile.size)} · Ready to analyze</small></div><span className="ready-check">✓</span></div>
                 </>}
                 <div className="settings-divider" />
-                <div className="card-heading settings-title"><div><h2>Detection settings</h2><p>These values apply to this analysis only.</p></div><span className="settings-tag">LOCAL MODEL</span></div>
+                <div className="card-heading settings-title"><div><h2>Detection settings</h2><p>These values apply to this analysis only.</p></div></div>
                 <label className="setting-row"><span><strong>Sampling rate</strong><small>Frames analyzed per second</small></span><span className="range-control"><input type="range" min="0.5" max="5" step="0.5" value={sampleFps} onChange={(event) => setSampleFps(Number(event.target.value))} /><b>{sampleFps} <small>FPS</small></b></span></label>
                 <label className="setting-row"><span><strong>Confidence threshold</strong><small>Minimum model score to include a detection</small></span><span className="range-control"><input type="range" min="0.1" max="0.9" step="0.05" value={confidence} onChange={(event) => setConfidence(Number(event.target.value))} /><b>{confidence.toFixed(2)}</b></span></label>
                 <label className="setting-row"><span><strong>Inference image size</strong><small>Lower size may reduce memory use</small></span><select className="select-input" value={imageSize} onChange={(event) => setImageSize(Number(event.target.value))}><option value={640}>640 px · Recommended</option><option value={480}>480 px · Lower memory</option></select></label>
                 <label className="setting-row tracking-row"><span><strong>Object tracking</strong><small>Best-effort IDs can switch or disappear</small></span><input className="toggle" type="checkbox" checked={tracking} onChange={(event) => setTracking(event.target.checked)} /></label>
-                <div className="analysis-action"><div><span className="lock">▣</span> Runs on this device with <strong>{system?.model_name ?? 'yolo11n.pt'}</strong></div><button className="primary-button" disabled={!selectedFile || busy} onClick={() => void startAnalysis()}>{busy ? 'Starting…' : 'Analyze video'} <span>→</span></button></div>
+                <div className="analysis-action"><div>Model: <strong>{system?.model_name ?? 'yolo11n.pt'}</strong> · stored locally</div><button className="primary-button" disabled={!selectedFile || busy} onClick={() => void startAnalysis()}>{busy ? 'Starting…' : 'Analyze video'}</button></div>
                 {notice && <div className="inline-notice">{notice}</div>}
               </div>
-              <aside className="settings-aside"><div className="aside-icon">✳</div><h3>What to expect</h3><p>SceneTrace detects common object classes, then builds an event for each detection in the sampled frames.</p><div className="aside-rule" /><div className="aside-detail"><span>MODEL</span><strong>{system?.model_name ?? 'yolo11n.pt'}</strong></div><div className="aside-detail"><span>DEVICE</span><strong>{system?.device_name ?? system?.inference_device ?? 'Checking…'}</strong></div><div className="aside-detail"><span>STORAGE</span><strong>Local machine</strong></div><p className="aside-caveat">Processing speed depends on video length, codec, and resolution. This is not real-time analysis.</p></aside>
             </div>
           </section>
         )}
 
         {page === 'processing' && job && (
           <section className="page-content processing-page">
-            <div className="eyebrow">ANALYSIS JOB · {job.job_id.slice(0, 8).toUpperCase()}</div><h1 className="page-heading">{job.status === 'queued' ? 'Waiting in local queue' : job.status === 'failed' ? 'Analysis needs attention' : 'Reading your video.'}</h1><p className="page-subtitle">{job.status === 'queued' ? 'A single worker is finishing any earlier local job.' : job.status === 'failed' ? 'The analysis could not be completed.' : 'Sampling frames and checking for supported objects.'}</p>
+            <h1 className="page-heading">{job.status === 'queued' ? 'Waiting to start' : job.status === 'failed' ? 'Analysis failed' : 'Processing video'}</h1><p className="page-subtitle">{job.status === 'queued' ? 'The local worker will start shortly.' : job.status === 'failed' ? 'The analysis could not be completed.' : 'Sampling frames and detecting objects.'}</p>
             <div className="processing-card">
-              <div className="processing-video"><span className="scan-corner top-left" /><span className="scan-corner top-right" /><span className="scan-corner bottom-left" /><span className="scan-corner bottom-right" /><div className="scan-grid" /><div className="processing-symbol">◉</div><div className="processing-filename">{video?.original_filename ?? 'Video analysis'}</div></div>
-              <div className="processing-info"><div className="processing-state"><span className={`state-pulse ${job.status}`} />{job.status.toUpperCase()}<span className="processing-percent">{Math.round(job.progress)}%</span></div><div className="progress-track"><span style={{ width: `${job.progress}%` }} /></div><div className="progress-caption"><span>{job.frames_processed} frames processed</span><span>{job.frames_total ?? '—'} estimated</span></div>
-                <div className="processing-detail-grid"><div><span>MODEL</span><strong>{job.model_name}</strong></div><div><span>RATE</span><strong>{job.settings.sample_fps} frames / sec</strong></div><div><span>IMAGE SIZE</span><strong>{job.settings.image_size}px</strong></div><div><span>DEVICE</span><strong>{system?.inference_device ?? 'Local'}</strong></div></div>
+              <div className="processing-info"><div className="processing-file-title">{video?.original_filename ?? 'Video analysis'}</div><div className="processing-state"><span className={`state-pulse ${job.status}`} />{job.status === 'queued' ? 'Queued' : job.status === 'failed' ? 'Failed' : 'Processing'}<span className="processing-percent">{Math.round(job.progress)}%</span></div><div className="progress-track"><span style={{ width: `${job.progress}%` }} /></div><div className="progress-caption"><span>{job.frames_processed} frames processed</span><span>{job.frames_total ?? '—'} estimated</span></div>
+                <div className="processing-detail-grid"><div><span>Model</span><strong>{job.model_name}</strong></div><div><span>Sampling rate</span><strong>{job.settings.sample_fps} frames/sec</strong></div><div><span>Image size</span><strong>{job.settings.image_size}px</strong></div><div><span>Device</span><strong>{system?.inference_device ?? 'Local'}</strong></div></div>
                 {job.error && <div className="job-error">{job.error}</div>}
                 {job.status === 'completed' && <button className="primary-button full-button" onClick={() => setPage('results')}>View results <span>→</span></button>}
               </div>
             </div>
-            <p className="processing-note"><span className="lock">▣</span> Your video is being processed locally and is not sent to an external AI service.</p>
+            <p className="processing-note">This analysis runs on your device.</p>
           </section>
         )}
 
         {page === 'results' && job && video && (
           <section className="page-content results-page">
-            <div className="results-header"><div><button className="back-link" onClick={() => setPage('dashboard')}>← <span>Library</span></button><div className="eyebrow">ANALYSIS COMPLETE · {job.job_id.slice(0, 8).toUpperCase()}</div><h1 className="page-heading">{video.original_filename}</h1><p className="page-subtitle">Sampled at {job.settings.sample_fps} frames per second · {job.model_name}</p></div><button className="secondary-button" onClick={() => { setJob(null); setVideo(null); setPage('dashboard') }}>＋ New analysis</button></div>
-            <div className="summary-grid"><div className="summary-card"><span>VIDEO DURATION</span><strong>{durationLabel}</strong><small>Source length</small></div><div className="summary-card"><span>SAMPLED FRAMES</span><strong>{job.frames_processed}<i> / {job.frames_total ?? job.frames_processed}</i></strong><small>Frames analyzed</small></div><div className="summary-card accent-summary"><span>DETECTIONS</span><strong>{job.detections_count.toLocaleString()}</strong><small>Model detections</small></div><div className="summary-card"><span>OBJECT CLASSES</span><strong>{Object.keys(job.class_counts).length}</strong><small>Unique detected classes</small></div></div>
+            <div className="results-header"><div><button className="back-link" onClick={() => setPage('dashboard')}>← <span>Library</span></button><div className="result-status">Analysis complete · {job.job_id.slice(0, 8)}</div><h1 className="page-heading">{video.original_filename}</h1><p className="page-subtitle">Sampled at {job.settings.sample_fps} frames per second · {job.model_name}</p></div><button className="secondary-button" onClick={beginNewAnalysis}>New analysis</button></div>
+            <div className="summary-grid"><div className="summary-card"><span>Video duration</span><strong>{durationLabel}</strong><small>Source length</small></div><div className="summary-card"><span>Sampled frames</span><strong>{job.frames_processed}<i> / {job.frames_total ?? job.frames_processed}</i></strong><small>Frames analyzed</small></div><div className="summary-card accent-summary"><span>Detections</span><strong>{job.detections_count.toLocaleString()}</strong><small>Model detections</small></div><div className="summary-card"><span>Object classes</span><strong>{Object.keys(job.class_counts).length}</strong><small>Unique detected classes</small></div></div>
             <div className="results-layout">
               <div className="results-main-column">
-                <div className="player-card"><div className="player-topline"><div><div className="eyebrow">VIDEO PLAYBACK</div><strong>{previewMode === 'annotated' ? 'Annotated preview' : 'Original video'}</strong></div><div className="player-toggle"><button className={previewMode === 'original' ? 'selected' : ''} onClick={() => { setPreviewPlaybackError(false); setPreviewMode('original') }}>Original</button><button className={previewMode === 'annotated' ? 'selected' : ''} disabled={!annotatedArtifact} onClick={() => { setPreviewPlaybackError(false); setPreviewMode('annotated') }}>Annotated</button></div></div>
+                <div className="player-card"><div className="player-topline"><div><strong>{previewMode === 'annotated' ? 'Annotated preview' : 'Original video'}</strong></div><div className="player-toggle"><button className={previewMode === 'original' ? 'selected' : ''} onClick={() => { setPreviewPlaybackError(false); setPreviewMode('original') }}>Original</button><button className={previewMode === 'annotated' ? 'selected' : ''} disabled={!annotatedArtifact} onClick={() => { setPreviewPlaybackError(false); setPreviewMode('annotated') }}>Annotated</button></div></div>
                   <div className="video-frame">
                     {previewMode === 'original' ? <video ref={originalRef} src={activeVideoUrl} controls playsInline onLoadedMetadata={(event) => applyPendingSeek(event.currentTarget)} /> : annotatedArtifact && !previewPlaybackError ? <video ref={annotatedRef} src={`${API}${annotatedArtifact.url}`} controls playsInline onError={() => setPreviewPlaybackError(true)} onLoadedMetadata={(event) => applyPendingSeek(event.currentTarget)} /> : <div className="no-preview"><span>▧</span><strong>Preview unavailable</strong><p>Detection events are saved; this browser could not play the annotated video.</p></div>}
                   </div><div className="player-foot"><span><i className="green-mini-dot" /> {previewMode === 'original' ? 'Source video' : 'Sampled frame preview'}</span><span>{video.width} × {video.height} <b>·</b> {durationLabel}</span></div>
                 </div>
-                <div className="class-card"><div className="card-heading"><div><div className="eyebrow">DETECTIONS BY CLASS</div><h2>Object breakdown</h2></div><span className="count-caption">{job.detections_count} total</span></div>
+                <div className="class-card"><div className="card-heading"><div><h2>Detections by class</h2></div><span className="count-caption">{job.detections_count} total</span></div>
                   {Object.keys(job.class_counts).length === 0 ? <div className="no-events">No objects were detected above this confidence threshold.</div> : <div className="class-list">{Object.entries(job.class_counts).sort((a, b) => b[1] - a[1]).map(([name, count]) => <button className={`class-row ${classFilter === name ? 'class-selected' : ''}`} key={name} onClick={() => setClassFilter(classFilter === name ? 'all' : name)}><span className="class-name">{name}</span><span className="class-bar"><i style={{ width: `${Math.max(4, count / Math.max(...Object.values(job.class_counts)) * 100)}%` }} /></span><strong>{count}</strong></button>)}</div>}
                 </div>
               </div>
-              <aside className="event-panel"><div className="event-panel-head"><div><div className="eyebrow">TIMESTAMPED EVENTS</div><h2>Event timeline <span>{events.length}</span></h2></div><select className="filter-select" value={classFilter} onChange={(event) => setClassFilter(event.target.value)}><option value="all">All classes</option>{Object.keys(job.class_counts).sort().map((name) => <option key={name} value={name}>{name}</option>)}</select></div>
-                <div className="timeline-meta"><span><i /> SORTED BY TIME</span><span>Click an event to seek</span></div>
+              <aside className="event-panel"><div className="event-panel-head"><div><h2>Event timeline <span>{events.length}</span></h2></div><select className="filter-select" value={classFilter} onChange={(event) => setClassFilter(event.target.value)}><option value="all">All classes</option>{Object.keys(job.class_counts).sort().map((name) => <option key={name} value={name}>{name}</option>)}</select></div>
+                <div className="timeline-meta"><span>Sorted by time</span><span>Select an event to seek</span></div>
                 <div className="event-list">{events.length === 0 ? <div className="event-empty"><span>◷</span><strong>No events in this view</strong><p>Try another class filter or lower the confidence threshold on a new analysis.</p></div> : events.map((event) => <button className="event-card" key={event.id} onClick={() => jumpTo(event.timestamp_seconds)}><span className="event-thumb">{event.thumbnail_url ? <img src={`${API}${event.thumbnail_url}`} alt="" loading="lazy" /> : <span>▧</span>}<i>▶</i></span><span className="event-details"><strong>{event.class_name}</strong><small>{(event.confidence * 100).toFixed(0)}% model score{event.track_id !== null ? ` · ID ${event.track_id}` : ''}</small><span className="event-time">◷ {formatTime(event.timestamp_seconds)}</span></span><span className="event-jump">↗</span></button>)}</div>
                 <div className="tracking-note"><span>ⓘ</span> Confidence is a model score, not a probability of truth. Track IDs can change or disappear.</div>
               </aside>
