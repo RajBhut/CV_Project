@@ -1,0 +1,12 @@
+* text=auto
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.pt binary
+*.onnx binary
+*.mp4 binary
+*.mov binary
+*.avi binary
+*.webm binary
+*.mkv binary

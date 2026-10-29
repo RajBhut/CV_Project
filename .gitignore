@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Local data and model weights
+backend/app/data/
+backend/data/
+*.pt
+*.onnx
+*.mp4
+*.mov
+*.avi
+*.webm
+*.mkv
+
+# Local configuration and databases
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
